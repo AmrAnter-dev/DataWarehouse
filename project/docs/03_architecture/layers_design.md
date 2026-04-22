@@ -67,7 +67,7 @@ The Bronze layer stores raw data exactly as received from the source system with
 
 ⸻
 
-- Data Transformations
+ Data Transformations
 
  None (strict rule)
 
@@ -79,7 +79,7 @@ Allowed only:
 
 ⸻
 
-- Data Modelling
+ Data Modelling
 
  No modeling
 Schema = source schema
