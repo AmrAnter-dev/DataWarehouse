@@ -1,10 +1,10 @@
 General Principles
 
-* Naming Convensions: Use snake_case, with lowercase letters and underscore(_) to separate words.
+* Naming Conventions: Use snake_case, with lowercase letters and underscore(_) to separate words.
 * Language: Use English for all names.
 * Avoid Reserved Words: Do not use SQL reserved words as object names.
 
-Table Naming Convensions
+Table Naming Conventions
 
 Bronze Rules
 * All names must start with source system name, and tables names must match their original names without renaming.
