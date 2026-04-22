@@ -69,7 +69,7 @@ Stored Procedure
 __________
 
 Some Rules for good practising never to miss
-
+__________
 1. Keep It Simple and Consistent
    
 The most important rule for any naming convention is to maintain simplicity and consistency across all data objects.
@@ -79,7 +79,7 @@ Avoid obscure abbreviations or internal codes that might confuse people and crea
 For example,  use a more descriptive name like dim_manufacturing_facility.
 This option is slightly longer but is instantly clear about the data it contains.
 This approach promotes data consistency and makes the data warehouse more approachable for business users.
-
+_________
 2. Use Prefixes for Layers and Object Types
    
 Adding prefixes to your object names makes it easy to identify the object's purpose and its place in the data architecture.
@@ -95,7 +95,7 @@ Consider a prefix system like this for your warehouse design:
 •	dm_: For tables in a data mart built for a specific business function.
 Following this structure, a dimension table for customer data would be named dim_customer.
 A view on top of that for a monthly sales report could be vw_monthly_sales_summary.
-
+________
 3. Include the Business Context in the Name
 
 When naming data objects, it is helpful to include the business process or subject area they relate to.
@@ -106,14 +106,14 @@ This makes it easier to manage financial data separately from marketing data.
 •	fact_sales_orders
 •	dim_marketing_campaigns
 •	dm_hr_employee_headcount
-
+_________
 4. Avoid Special Characters and Spaces
 
 Stick to letters, numbers, and underscores for all object names. You should avoid spaces, hyphens, and other special characters.
 These characters can cause syntax errors in SQL queries or may not be supported by all database platforms and business intelligence tools.
 Keeping names short and simple, using only alphanumeric characters and underscores, is a core part of any robust warehouse naming standards.
 This approach reduces technical friction. It allows your team to focus on analysis rather than troubleshooting query errors.
-
+__________
 5. Use Singular Nouns for Table Names
    
 When creating table names, it is a common practice to use singular nouns instead of plural ones.
@@ -122,7 +122,7 @@ For example, a table named customer contains a collection of individual customer
 This keeps the naming convention consistent and improves the logical flow of SQL queries.
 An analyst can write FROM customer which reads more naturally than FROM customers.
 While this can be a subject of debate, choosing one form and applying it consistently is the most important part of this design principle.
-
+___________
 6. Be Specific with Column Names
     
 For column names, specificity is critical for clarity. Instead of a generic name like name, use customer_first_name or product_name.
@@ -130,7 +130,7 @@ This practice helps avoid ambiguity, especially when joining multiple tables in 
 When a column is a foreign key, its name should match the primary key in the referenced table, such as customer_id.
 This self-documenting style makes relationships between tables obvious without needing to consult documentation.
 Naming a specific attribute clearly is fundamental to data integrity.
-
+___________
 7. Establish a Consistent Date and Time Format
     
 When naming columns that contain date or time information, stick to a consistent format.
@@ -139,7 +139,7 @@ For timestamps that include both date and time, using a suffix like _at or _ts (
 This consistent naming for data types makes it easy for anyone to identify date and time fields.
 It also helps in applying date-specific functions correctly.
 For partitions or files, using the ISO 8601 format (YYYYMMDD) is useful for chronological sorting.
-
+___________
 8. Avoid Using Reserved Words
     
 Do not use words that are reserved keywords in SQL or your specific database system.
