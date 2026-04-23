@@ -249,13 +249,5 @@ Notes:
 
 ---
 
-## Suggested Repo Placement
-
-```text
-/docs/source_assessments/
-   crm_source_assessment.md
-   erp_source_assessment.md
-   claims_source_assessment.md
-```
 
 This template is intended to be completed before Bronze layer development begins.
