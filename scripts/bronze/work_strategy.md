@@ -37,7 +37,7 @@ Before coding, decide Bronze principles:
 Typical Bronze rules:
 
 * Store raw data as-is (minimal transformation)
-* Preserve source fidelity
+* Preserve source fidelity(Preserve source data exactly as received)
 * Add technical metadata only:
 
 Examples:
@@ -83,13 +83,15 @@ Typical Bronze checks:
 
 Completeness
 
-* Row count reconciliation
-* Missing files detection
+* Row count reconciliation(Compare source record counts with Bronze record counts)
+* Missing files detection(Ensure no records were lost during ingestion)
 
 Schema validation
 
-* Schema drift detection
+* Verify columns map correctly
 * Required columns check
+* Check data types and schema conformity
+* Detect schema drift or misplaced fields
 
 Technical quality
 
@@ -119,13 +121,15 @@ Version in Git from day one:
 * Ingestion code
 * Mapping docs
 * Source assumptions
+* Configuration file
 
 Document:
 
-* Bus matrix dependencies (if applicable)
-* Source lineage
+* Source lineage(Source-to-Bronze mappings)
 * Bronze schema design
 * Load logic
+* Validation rules
+* Assumptions and source system findings
 
 ---
 
