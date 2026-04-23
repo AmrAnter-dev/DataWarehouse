@@ -190,13 +190,8 @@ Very common pattern.
 
 ---
 
-## One tweak to your sequence
+## our sequence
 
-Your original:
-
-> analyze → code ingestion → validate → docs/versioning
-
-I'd improve to:
 
 ✅ analyze
 ✅ design bronze structure
@@ -204,6 +199,6 @@ I'd improve to:
 ✅ validate/monitor
 ✅ document + version continuously
 
-That “design before coding” step is the main missing piece.
+
 
 
