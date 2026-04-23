@@ -79,8 +79,6 @@ Focus on:
 
 ## 4. Data Validation & Quality Checks
 
-Yes — this belongs immediately after ingestion.
-
 Typical Bronze checks:
 
 Completeness
@@ -115,8 +113,6 @@ fit well.
 
 ## 5. Documentation + Versioning
 
-I’d move this throughout, not leave it only at the end.
-
 Version in Git from day one:
 
 * DDL scripts
@@ -133,9 +129,7 @@ Document:
 
 ---
 
-## 6. (Often missed) Observability & Monitoring
-
-I’d add this as a formal step.
+## 6. Observability & Monitoring
 
 Track:
 
@@ -190,7 +184,7 @@ Very common pattern.
 
 ---
 
-## our sequence
+## sequence
 
 
 ✅ analyze
