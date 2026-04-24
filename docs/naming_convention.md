@@ -8,10 +8,10 @@ Table Naming Conventions
 
 Bronze Rules
 * All names must start with source system name, and tables names must match their original names without renaming.
-* <sourcesystem>_<entity>
-  * <sourcesystem> : Name of the source system (e.g., crm , erp )
-  * <entity> : Exact table name from the source system.
-  * Example : crm_customer_info ---> Customer information from the CRM system
+ <sourcesystem>_<entity>
+   <sourcesystem> : Name of the source system (e.g., crm , erp )
+   <entity> : Exact table name from the source system.
+   Example : crm_customer_info ---> Customer information from the CRM system
 
 
 _________
@@ -19,22 +19,22 @@ _________
 
 Silver Rules
 * All names start with the source system name , and table names must match their original names without renaming
-* <sourcesystem>_<entity>
-  * <sourcesystem> : Nmae of the source system (e.g., crm , erp )
-  * <entity> : Exact table name from the source system.
-  * Example : crm_customer_info ---> Customer information from the CRM system
+ <sourcesystem>_<entity>
+   <sourcesystem> : Nmae of the source system (e.g., crm , erp )
+   <entity> : Exact table name from the source system.
+   Example : crm_customer_info ---> Customer information from the CRM system
 
 __________
 
 
 Gold Rules
 * All names must use meaningful, business-aligned names for tables, starting with the category prefix.
-* <category>_<entity>
-  * <category> : Describe the role of the table, such as dim_ (dimension table) or fact_ (fact table) or agg_ (aggregation table).
-  * <entity> : Descriptive name of the table, aligned with the bussiness domain (e.g., customers , products , sales).
-  * Examples:
-      * dim_customers ---> dimension table for customers
-      * fact_transaction_line ---> fact table for per transaction line
+ <category>_<entity>
+   <category> : Describe the role of the table, such as dim_ (dimension table) or fact_ (fact table) or agg_ (aggregation table).
+   <entity> : Descriptive name of the table, aligned with the bussiness domain (e.g., customers , products , sales).
+   Examples:
+       dim_customers ---> dimension table for customers
+       fact_transaction_line ---> fact table for per transaction line
 
 __________
 
