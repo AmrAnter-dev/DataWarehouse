@@ -42,12 +42,12 @@ Typical Bronze rules:
 
 Examples:
 
-* `load_timestamp`
-* `source_system`
-* `batch_id`
-* `file_name`
-* `ingestion_date`
-* `record_hash`
+* `dwh_load_date`
+* `dwh_source_system`
+* `dwh_batch_id`
+* `dwh_file_name`
+* `dwh_ingestion_ts`
+* `dwh_record_hash`
 
 Also decide:
 
