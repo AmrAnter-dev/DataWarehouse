@@ -32,7 +32,7 @@ This approach allows:
 
 ⸻
 ![HighLevelArchitecture](../images/HighLevelArchitecture.png)
-___
+__
 3. Technical Details
 
 ⸻
