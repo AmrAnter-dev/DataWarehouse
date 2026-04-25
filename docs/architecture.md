@@ -31,7 +31,7 @@ This approach allows:
 * Supporting multiple downstream use cases from the same cleaned data
 
 ⸻
-![HighLevelArchitecture](../images/HighLevelArchitecture.png)
+![High_Level_Architecture](../images/High_Level_Architecture.png)
 __
 3. Technical Details
 
