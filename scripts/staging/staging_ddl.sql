@@ -1,3 +1,72 @@
+/*====================================================================
+File Name   : staging_and_audit_objects.sql
+Script Type : DDL Deployment Script
+Project     :  DataWarehouse
+Layer       : Staging + Bronze Control Metadata
+
+Author      : Amr Anter
+Created On  : 2026-04-26
+Version     : 1.0
+
+Purpose:
+    Creates staging landing tables for source-file ingestion and
+    deploys the Bronze audit control table used for load monitoring.
+
+Scope:
+    This script performs:
+      - Drop and recreate of staging landing tables
+      - Drop and recreate of bronze.load_audit
+      - Initialization of raw file landing structures
+      - Deployment of ingestion monitoring metadata objects
+
+Source Systems Covered:
+    CRM
+      - staging.crm_cust_info
+      - staging.crm_prd_info
+      - staging.crm_sales_details
+
+    ERP
+      - staging.erp_cust_az12
+      - staging.erp_loc_a101
+      - staging.erp_px_cat_g1v2
+
+Control Metadata Objects
+      - bronze.load_audit
+
+Design Intent:
+    Staging Layer
+      - Temporary raw landing zone for source files
+      - Mirrors source extract structure
+      - Supports truncate-and-reload ingestion pattern
+
+    Audit Layer
+      - Stores batch execution metadata
+      - Supports observability and restartability
+      - Provides load lineage controls
+
+Design Notes:
+    - Staging tables intentionally contain minimal constraints
+    - No transformations or business rules applied here
+    - Data cleansing belongs in Silver layer
+    - Audit table supports operational monitoring
+
+Dependencies:
+    - Database : DataWarehouse
+    - Schemas  : staging, bronze
+
+Deployment Notes:
+    - Safe for repeatable development deployments
+    - Existing objects dropped before recreation
+    - Intended for environment initialization scripts
+
+Change History
+----------------------------------------------------------------------
+Version   Date         Author        Description
+1.0       2026-04-26   Amr Anter     Initial creation
+====================================================================*/
+
+
+
 USE DataWarehouse;
 GO
 
