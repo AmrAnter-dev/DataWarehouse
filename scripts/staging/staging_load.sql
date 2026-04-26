@@ -1,18 +1,84 @@
-/*
-===============================================================================
-Procedure Name : staging.load_staging
-Purpose        : Full refresh load of staging layer source tables
-Load Type      : Idempotent Full Reload
-Author         : Amr Anter
-Created Date   : 2026-04-24
+/*====================================================================
+Object Name : staging.load_staging
+Object Type : Stored Procedure
+Module Type : ETL Orchestration / Batch Control Procedure
 
-Behavior:
-- Truncates and reloads staging tables
-- Logs audit metrics
-- Validates row counts
-- Raises errors for orchestration tools
-===============================================================================
-*/
+Project     :  DataWarehouse
+Layer       : Staging Ingestion Layer
+
+Author      : Amr Anter
+Created On  : 2026-04-26
+Version     : 1.0
+
+Purpose:
+    Orchestrates full-batch ingestion of CRM and ERP source files into
+    staging tables, performs validation checks, and logs execution
+    metrics into the audit framework.
+
+Description:
+    This procedure controls end-to-end staging layer loads using a
+    truncate-and-reload pattern for all configured source objects.
+
+Processing Workflow:
+    1. Generate batch execution ID
+    2. Load CRM source tables
+    3. Load ERP source tables
+    4. Validate row counts after each load
+    5. Write success/failure audit records
+    6. Capture batch-level execution timing
+
+Source Systems Loaded:
+    CRM
+      - staging.crm_cust_info
+      - staging.crm_prd_info
+      - staging.crm_sales_details
+
+    ERP
+      - staging.erp_cust_az12
+      - staging.erp_loc_a101
+      - staging.erp_px_cat_g1v2
+
+Load Strategy:
+    Pattern        : Full Refresh
+    Method         : BULK INSERT
+    Validation     : Row Count Checks
+    Logging        : Audit Driven
+    Recovery Mode  : Fail Fast with Exception Logging
+
+Dependencies:
+    - staging source landing tables
+    - bronze.log_load_audit procedure
+    - bronze.load_audit table
+    - Source CSV files accessible to SQL Server
+
+Operational Controls:
+    - Batch-level traceability via generated batch_id
+    - Table-level execution metrics
+    - Failure logging with error propagation
+    - Load duration monitoring
+
+Failure Conditions:
+    - Missing or inaccessible source files
+    - Schema/file structure mismatch
+    - Zero-row load validation failure
+    - Bulk insert execution errors
+
+Usage Example:
+    EXEC staging.load_staging;
+
+Design Notes:
+    - Intended as staging-layer control procedure
+    - Minimal transformations applied in this layer
+    - Business cleansing and conformance occur in Silver layer
+
+Change History
+----------------------------------------------------------------------
+Version   Date         Author        Description
+1.0       2026-04-26   Amr Anter     Initial creation
+====================================================================*/
+
+
+
 
 CREATE OR ALTER PROCEDURE staging.load_staging
 AS
