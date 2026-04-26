@@ -1,3 +1,55 @@
+/*====================================================================
+File Name   : bronze_ddl.sql
+Project     :  DataWarehouse
+Layer       : Bronze (Raw Ingestion Layer)
+
+Author      : Amr Anter
+Created On  : 2026-04-26
+Version     : 1.0
+
+Purpose:
+    Creates raw source ingestion tables in the Bronze layer for
+    CRM and ERP source systems.
+
+Scope:
+    - Drops existing objects if they exist
+    - Creates source-aligned landing tables
+    - Preserves source structure with minimal transformations
+    - Adds lineage, audit, and ingestion metadata columns
+
+Source Systems:
+    CRM
+      - crm_cust_info
+      - crm_prd_info
+      - crm_sales_details
+
+    ERP
+      - erp_cust_az12
+      - erp_loc_a101
+      - erp_px_cat_g1v2
+
+Design Notes:
+    - Bronze layer stores raw ingested data as close to source as possible
+    - Data types mirror source extracts where feasible
+    - Business transformations belong in Silver layer
+    - Audit columns support lineage and batch traceability
+
+Metadata Columns:
+    dwh_batch_id
+    dwh_record_source
+    dwh_load_date
+    dwh_ingestion_ts
+
+Dependencies:
+    - Database: DataWarehouse
+    - Schema  : bronze
+
+Change History
+----------------------------------------------------------------------
+Version   Date         Author        Description
+1.0       2026-04-26   Amr Anter     Initial creation
+====================================================================*/
+
 USE DataWarehouse;
 GO
 
