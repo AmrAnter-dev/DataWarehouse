@@ -2,10 +2,10 @@
 
 ## 1. Understand & Draw the Integration Model
 قبل أي transformation، افهم العلاقات بين مصادر البيانات والجداول:
-
+**Draw:**Integration Model** (Source-to-Source relationships)
 - Identify source entities and relationships  
-- رسم **Integration Model** (Source-to-Source relationships)  
-- تحديد:
+- *  
+-identify:
   - Primary Keys  
   - Foreign Keys  
   - Business Keys  
