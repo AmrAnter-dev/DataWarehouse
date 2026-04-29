@@ -78,7 +78,7 @@ dim_customer --- fact_sales_transaction --- dim_product
 Detailed schema diagram available in:
 
 ```text
-/diagram
+/images
 ```
 
 ---
