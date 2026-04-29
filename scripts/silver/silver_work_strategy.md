@@ -1,12 +1,13 @@
 # Silver Layer Development Best-Practice Workflow
 
-## 1. Understand & Draw the Integration Model
-قبل أي transformation، افهم العلاقات بين مصادر البيانات والجداول:
+## 1. Understand and Draw the Integration Model
 
-**Draw:**Integration Model (Source-to-Source relationships)
-- Identify source entities and relationships  
-- *  
--identify:
+Before applying transformations, understand relationships between source tables and systems.
+
+**Develop an Integration Model (Source-to-Source Relationships)**
+
+- Identify source entities and their relationships  
+- Identify:
   - Primary Keys  
   - Foreign Keys  
   - Business Keys  
@@ -14,8 +15,9 @@
 - Detect overlapping entities across systems (CRM, ERP, etc.)  
 - Define conformed dimensions early
 
-**Goal:** understanding relationship before cleaning and join
-Examples of artifacts:
+**Goal:** Understand relationships before cleansing, joining, and integrating data.
+
+Example artifacts:
 - Entity Relationship Diagram (ERD)  
 - Source-to-Target Mapping (STM)  
 - Bus Matrix  
@@ -24,17 +26,19 @@ Examples of artifacts:
 ---
 
 ## 2. Data Profiling
+
 Analyze data quality issues before cleaning:
 
 - Null analysis  
 - Duplicate detection  
-- Invalid formats  
-- Outlier checks  
+- Invalid format checks  
+- Outlier analysis  
 - Domain validation
 
 ---
 
 ## 3. Structural Standardization
+
 Standardize schema and formats:
 
 - Rename columns using naming conventions  
@@ -46,43 +50,47 @@ Standardize schema and formats:
 ---
 
 ## 4. Data Cleansing
-Resolve data quality problems:
 
-- Handle NULLs  
-- Correct dirty values  
+Resolve data quality issues:
+
+- Handle NULL values  
+- Correct dirty or inconsistent values  
 - Standardize codes and categories  
 - Fix invalid dates  
 - Remove duplicates
 
 ---
 
-## 5. Apply Business Rules Validation
+## 5. Apply Business Rule Validation
+
 Enforce domain logic:
 
-- Validate prices, quantities, dates  
+- Validate prices, quantities, and dates  
 - Check referential integrity  
 - Handle invalid or contradictory records
 
 ---
 
-## 6. Derivations & Enrichment
+## 6. Derivations and Enrichment
+
 Create value-added attributes:
 
 - Derived columns  
 - Flags and indicators  
 - Surrogate keys  
 - Calculated metrics  
-- Technical / audit enrichment columns
+- Technical and audit enrichment columns
 
 Examples:
 
-- `dwh_last_updated_ts` → last ETL update timestamp  
-- `dwh_validation_error` → validation issue flag or error description  
-- `dwh_hash_key` → hash-generated business key for change detection / deduplication
+- `dwh_last_updated_ts` — Last ETL update timestamp  
+- `dwh_validation_error` — Validation issue flag or error description  
+- `dwh_hash_key` — Hash-generated business key for change detection or deduplication
 
 ---
 
-## 7. Deduplication & Survivorship
+## 7. Deduplication and Survivorship
+
 Apply record selection rules:
 
 - Latest record wins  
@@ -92,15 +100,17 @@ Apply record selection rules:
 ---
 
 ## 8. Conformance Across Sources
+
 Unify shared business entities:
 
 - Customer conformance  
 - Product conformance  
-- Country / code harmonization
+- Country and code harmonization
 
 ---
 
-## 9. Audit & Metadata
+## 9. Audit and Metadata
+
 Add control and observability:
 
 - Load timestamps  
