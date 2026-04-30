@@ -47,8 +47,9 @@ CREATE TABLE silver.crm_cust_info
         (
                 customer_id             INT          ,
                 customer_key            NVARCHAR(50)  ,
-                firstname               NVARCHAR(50)  ,
-                lastname                NVARCHAR(50)  ,
+                first_name              NVARCHAR(50)  ,
+                last_name               NVARCHAR(50)  ,
+                full_name               NVARCHAR(100),
                 marital_status          NVARCHAR(50)  ,
                 gender                  NVARCHAR(50)  ,
                
