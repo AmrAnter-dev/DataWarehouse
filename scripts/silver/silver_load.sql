@@ -85,8 +85,9 @@ BEGIN
         insert into silver.crm_cust_info(
         customer_id,
         customer_key,
-        firstname,
-        lastname,
+        first_name,
+        last_name,
+        full_name,
         marital_status,
         gender,
         create_date,
@@ -104,52 +105,52 @@ BEGIN
         CASE
             WHEN TRIM(t.cst_firstname) = '' OR t.cst_firstname IS NULL THEN 'N/A'
             ELSE TRIM(t.cst_firstname)
-            END cst_firstname,
+            END first_name,
         CASE
             WHEN TRIM(t.cst_lastname) = '' OR t.cst_lastname IS NULL THEN 'N/A'
             ELSE TRIM(t.cst_lastname)
-            END cst_lastname,
-
+            END last_name,
+        CASE
+        WHEN TRIM(t.cst_firstname) = '' OR t.cst_firstname IS NULL
+          OR TRIM(t.cst_lastname) = '' OR t.cst_lastname IS NULL 
+          THEN 'N/A'
+          ELSE TRIM(t.cst_firstname)+' '+TRIM(t.cst_lastname)
+          END AS full_name,
+                
         CASE
             WHEN UPPER(TRIM(t.cst_marital_status)) = 'S' THEN 'single'
             WHEN UPPER(TRIM(t.cst_marital_status)) = 'M' THEN 'married'
             ELSE 'N/A'
-            END cst_marital_status,-- normalize marital status to readable values
+            END marital_status,-- normalize marital status to readable values
 
         CASE
             WHEN UPPER(TRIM(t.cst_gndr)) = 'F' THEN 'female'
             WHEN UPPER(TRIM(t.cst_gndr)) = 'M' THEN 'male'
             ELSE 'N/A'
-            END cst_gndr, -- normalize gender values to readable formate
+            END gender, -- normalize gender values to readable formate
 
         d.cleaned_date AS cst_create_date,
         t.dwh_batch_id,
         t.dwh_record_source,
         t.dwh_load_date,
         t.dwh_ingestion_ts,
-        CASE
-            WHEN TRY_CONVERT(
-                    date,
-                    REPLACE(REPLACE(REPLACE(REPLACE(
-                        TRIM(t.cst_create_date),
-                        CHAR(160),''),
-                        CHAR(13),''),
-                        CHAR(10),''),
-                        CHAR(9),'')
-                 ) IS NULL
-            THEN 'INVALID_DATE_FORMAT'
-            
-            END,
+        NULLIF(
+                CONCAT_WS('|',
+                    CASE WHEN d.cleaned_date IS NULL THEN 'INVALID_DATE_FORMAT' END,
+                    CASE WHEN t.cst_firstname IS NULL OR TRIM(t.cst_firstname) = '' THEN 'MISSING_FIRSTNAME' END,
+                    CASE WHEN t.cst_lastname IS NULL OR TRIM(t.cst_lastname) = '' THEN 'MISSING_LASTNAME' END
+                ),
+            '') AS dwh_validation_error,
 
         HASHBYTES(
            'SHA2_256',
-           CONCAT_WS('|',
-              COALESCE(t.cst_key,''),
-              COALESCE(TRIM(t.cst_firstname),''),
-              COALESCE(TRIM(t.cst_lastname),''),
-              COALESCE(CONVERT(varchar(10), d.cleaned_date, 23),'')
-           )
-        ) AS dwh_hash_key
+                        CONCAT_WS('|',
+                                  COALESCE(t.cst_key,''),
+                                  COALESCE(TRIM(t.cst_firstname),''),
+                                  COALESCE(TRIM(t.cst_lastname),''),
+                                  COALESCE(CONVERT(varchar(10), d.cleaned_date, 23),'')
+                               )
+              ) AS dwh_hash_key
 
 
         FROM (
@@ -214,15 +215,15 @@ BEGIN
         dwh_hash_key)
         
         SELECT 
-    prd_id,
+    prd_id AS product_id,
 
-    REPLACE(LEFT(prd_key,5),'-','_') AS cat_id,
+    REPLACE(LEFT(prd_key,5),'-','_') AS category_id,
 
-    SUBSTRING(prd_key,7,LEN(prd_key)) AS prd_key,
+    SUBSTRING(prd_key,7,LEN(prd_key)) AS product_key,
 
-    TRIM(prd_nm) AS prd_nm,
+    TRIM(prd_nm) AS product_name,
 
-    ISNULL(prd_cost,0) AS prd_cost,
+    prd_cost AS product_cost,
 
     CASE UPPER(TRIM(prd_line))
         WHEN 'R' THEN 'ROAD'
@@ -230,9 +231,9 @@ BEGIN
         WHEN 'M' THEN 'MOUNTAIN'
         WHEN 'T' THEN 'TOURING'
         ELSE 'N/A'
-    END AS prd_line,
+    END AS product_line,
 
-    TRY_CONVERT(date,prd_start_dt) AS prd_start_dt,
+    TRY_CONVERT(date,prd_start_dt) AS product_start_dt,
 
     DATEADD(
        day,
@@ -243,7 +244,7 @@ BEGIN
           PARTITION BY prd_key
           ORDER BY TRY_CONVERT(date,prd_start_dt)
        )
-    ) AS prd_end_dt,
+    ) AS product_end_dt,
 
     dwh_batch_id,
     dwh_record_source,
@@ -311,9 +312,9 @@ SET @row_count = @@ROWCOUNT;
             
             
             select
-            TRIM(sls_ord_num) AS sls_ord_num,
-            TRIM(sls_prd_key) AS sls_prd_key,
-            sls_cust_id,
+            TRIM(sls_ord_num) AS order_number,
+            TRIM(sls_prd_key) AS product_key,
+            sls_cust_id AS customer_id,
             -- ORDER DATE CLEANING
             CASE
                 WHEN TRY_CONVERT(date,sls_order_dt) IS NULL
@@ -324,14 +325,14 @@ SET @row_count = @@ROWCOUNT;
                 THEN TRY_CONVERT(date,sls_ship_dt)
 
                 ELSE TRY_CONVERT(date,sls_order_dt)
-            END AS sls_order_dt,
+            END AS order_date,
             -- SHIP DATE CLEANING
             CASE
                 WHEN TRY_CONVERT(date,sls_ship_dt) IS NULL THEN TRY_CONVERT(date,sls_order_dt)
                 WHEN TRY_CONVERT(date,sls_ship_dt) < TRY_CONVERT(date,sls_order_dt)
                 THEN TRY_CONVERT(date,sls_order_dt)
                 ELSE TRY_CONVERT(date,sls_ship_dt)
-                END AS sls_ship_dt,
+                END AS ship_date,
             -- DUE DATE CLEANING
             CASE
             WHEN TRY_CONVERT(date,sls_due_dt) <
@@ -352,7 +353,7 @@ SET @row_count = @@ROWCOUNT;
 
             ELSE TRY_CONVERT(date,sls_due_dt)
 
-            END AS sls_due_dt,
+            END AS due_date,
 
             -- SALES
                ROUND( 
@@ -367,8 +368,8 @@ SET @row_count = @@ROWCOUNT;
                             ABS(nullif(sls_quantity,0)) * ABS(nullif(sls_price,0))
                         ELSE sls_sales
                         END AS DECIMAL(10,2))
-                        ,2) AS sls_sales,
-            sls_quantity,
+                        ,2) AS total_sales,
+            sls_quantity AS quantity,
             -- PRICE CLEANING
             ROUND(
                 CAST(
@@ -382,7 +383,7 @@ SET @row_count = @@ROWCOUNT;
                         ELSE sls_price
                     END
                         AS DECIMAL(10,2))
-            ,2) AS sls_price,
+            ,2) AS unit_price,
             dwh_batch_id            ,
             dwh_record_source      ,
             dwh_load_date           ,
@@ -460,7 +461,7 @@ SET @row_count = @@ROWCOUNT;
             CASE 
 	            WHEN cid like 'NAS%' THEN SUBSTRING(cid,4,LEN(cid)) 
 	            ELSE cid
-	            END AS cid,
+	            END AS customer_id,
             -- cleaning birthdate
             CASE
                 WHEN TRY_CONVERT(date,
@@ -473,7 +474,7 @@ SET @row_count = @@ROWCOUNT;
                 ELSE TRY_CONVERT(date,
                     bdate)
     
-            END AS bdate,
+            END AS birthdate,
 
 	            -- cleaning low cardinality gender
             CASE
@@ -492,7 +493,7 @@ SET @row_count = @@ROWCOUNT;
                 )) IN ('MALE','M') THEN 'male'
 
                 ELSE 'N/A'
-            END AS gen,
+            END AS gender,
 
             dwh_batch_id             ,
             dwh_record_source        ,
@@ -548,66 +549,58 @@ SET @row_count = @@ROWCOUNT;
         -------------------------------------------------------
       
         SET @start_time = SYSDATETIME();
-        SET @current_table = 'silver.erp_cust_aZ12';
+        SET @current_table = 'silver.erp_loc_a101';
 
             TRUNCATE TABLE silver.erp_loc_a101;
             INSERT INTO silver.erp_loc_a101(
-                customer_id              ,
-                country             ,
-                -- Lineage / Audit columns
-                dwh_batch_id       ,
-                dwh_record_source   ,
-                dwh_load_date      ,
-                dwh_ingestion_ts  ,
-                 -- data quality / processing columns
-                
-                dwh_validation_error    ,
-                dwh_hash_key            
-                )
-                select
-                    -- cleaning business key
-                    REPLACE( TRIM(cid) ,'-','') AS cid,
-                    CASE
-                    WHEN
-                            UPPER(TRIM(cntry)) IN ('DE',
-                                                   'GERMANY')
-                    THEN
-                            'GERMANY'
-                    WHEN
-                            UPPER(TRIM(cntry)) IN ('USA',
-                                                   'UNITED STATES',
-                                                   'US')
-                    THEN
-                            'USA'
-                    WHEN
-                            cntry IS NULL
-                            OR TRIM(cntry) = ''
-                    THEN
-                            'N/A'
-                    ELSE
-                            UPPER(TRIM(cntry))
-                    END                         AS cntry,
-                     dwh_batch_id       ,
-                     dwh_record_source   ,
-                     dwh_load_date      ,
-                     dwh_ingestion_ts  ,
-                     NULLIF(
-                        CONCAT_WS('|',
-                                    CASE
-                                        WHEN REPLACE( TRIM(cid) ,'-','') = '' OR cid IS NULL
-                                        THEN 'INVALID_CUSTOMER_ID'
-                                        end,
-                                    CASE
-                                        WHEN cntry IS NULL OR TRIM(cntry) = ''
-                                        THEN 'INVALID_COUNTRY_NAME'
-                                    END
-                                            )
-                                                ,'') AS dwh_validation_error,
-                    HASHBYTES('SHA2_256',
-                            
-                                COALESCE(
-                                            REPLACE( TRIM(cid) ,'-',''),'')) AS dwh_hash_key
-                    FROM bronze.erp_loc_a101;
+                customer_id,
+                country,
+                dwh_batch_id,
+                dwh_record_source,
+                dwh_load_date,
+                dwh_ingestion_ts,
+                dwh_validation_error,
+                dwh_hash_key
+            )
+            SELECT
+                c.cleaned_customer_id,
+                c.cleaned_country,
+                dwh_batch_id,
+                dwh_record_source,
+                dwh_load_date,
+                dwh_ingestion_ts,
+
+                NULLIF(
+                    CONCAT_WS('|',
+                        CASE 
+                            WHEN c.cleaned_customer_id = '' THEN 'INVALID_CUSTOMER_ID'
+                        END,
+                        CASE 
+                            WHEN cntry IS NULL OR TRIM(cntry) = '' THEN 'INVALID_COUNTRY_NAME'
+                        END
+                    ),
+                '') AS dwh_validation_error,
+
+                HASHBYTES('SHA2_256',
+                    CONCAT_WS('|',
+                        COALESCE(c.cleaned_customer_id,''),
+                        COALESCE(c.cleaned_country,'')
+                    )
+                ) AS dwh_hash_key
+
+            FROM bronze.erp_loc_a101
+
+            CROSS APPLY (
+                SELECT
+                    cleaned_customer_id = REPLACE(TRIM(cid),'-',''),
+                    cleaned_country =
+                        CASE
+                            WHEN UPPER(TRIM(cntry)) IN ('DE','GERMANY') THEN 'GERMANY'
+                            WHEN UPPER(TRIM(cntry)) IN ('USA','UNITED STATES','US') THEN 'USA'
+                            WHEN cntry IS NULL OR TRIM(cntry) = '' THEN 'N/A'
+                            ELSE UPPER(TRIM(cntry))
+                        END
+            ) c;
 
             SET @row_count = @@ROWCOUNT;
 
@@ -644,10 +637,10 @@ SET @row_count = @@ROWCOUNT;
             dwh_hash_key)
 
             select 
-                TRIM(ID) AS id,
-                TRIM(CAT) AS cat,
-                TRIM(SUBCAT) AS subcat,
-                TRIM(MAINTENANCE) AS maintenance,
+                TRIM(id) AS product_id,
+                TRIM(cat) AS category,
+                TRIM(subcat) AS subcategory,
+                TRIM(maintenance) AS maintenance,
                 dwh_batch_id,
                 dwh_record_source,
                 dwh_load_date,
