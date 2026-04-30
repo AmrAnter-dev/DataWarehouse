@@ -1,0 +1,529 @@
+/*===============================================================================
+  File Name   : silver_layer_tests.sql
+  Project     : Data Warehouse (Bronze → Silver → Gold Architecture)
+  Layer       : Silver (Data Quality & Validation Layer)
+
+  Author      : Amr Anter
+  Created On  : 2026-04-30
+
+  Description :
+  ------------
+  This script contains a comprehensive suite of **data quality validation tests**
+  for the Silver layer tables. It ensures that transformed data meets the
+  expected standards before being promoted to the Gold layer.
+
+  Testing Objectives:
+  -------------------
+  - Validate primary/business key integrity (NULL & duplication checks)
+  - Detect unintended duplicates vs. versioned records
+  - Ensure data standardization (trimming, normalization)
+  - Verify low-cardinality domain consistency (e.g., gender, country, product_line)
+  - Validate numerical correctness (prices, quantities, sales)
+  - Detect invalid or inconsistent date values
+  - Identify hidden characters and formatting issues
+  - Confirm referential and logical consistency across datasets
+
+  Tables Covered:
+  ---------------
+  1. silver.crm_cust_info
+  2. silver.crm_prd_info
+  3. silver.crm_sales_details
+  4. silver.erp_cust_aZ12
+  5. silver.erp_loc_a101
+  6. silver.erp_px_cat_g1v2
+
+  Test Categories:
+  ----------------
+  - Primary Key Validation:
+      * NULL checks
+      * Duplicate detection
+      * Versioning identification
+
+  - Data Cleansing Validation:
+      * TRIM / whitespace checks
+      * Hidden characters detection
+      * Standardization of categorical values
+
+  - Data Integrity Checks:
+      * Date consistency (order, ship, due dates)
+      * Valid date ranges
+      * Referential alignment assumptions
+
+  - Numerical Validation:
+      * Negative or zero values
+      * Derived column validation (e.g., total_sales = quantity * unit_price)
+
+  - Data Quality Flags:
+      * Validation of dwh_validation_error logic
+      * Consistency with transformation rules
+
+  Usage Notes:
+  ------------
+  - These queries are intended for **manual validation and debugging**
+  - Expected result for most checks = **empty result set**
+  - Any returned rows indicate **data quality issues**
+  - Should be executed after each Silver load (full or incremental)
+
+  Future Improvements:
+  --------------------
+  - Automate tests using data quality frameworks (e.g., dbt tests)
+  - Integrate with CI/CD pipelines
+  - Add threshold-based alerting & monitoring
+
+===============================================================================*/
+
+
+------------------------------------------------------------
+-- silver.crm_cust_info testing
+------------------------------------------------------------
+-- dedup and null removal of primary key
+-- expectation : no duplication and no null values in PK
+
+--check for duplication or versioning and null in bussiness key
+--versioning(Changed row over time → Version)
+select
+        customer_id,
+        count(*) as duplicate_count
+from
+        silver.crm_cust_info
+group by
+        customer_id
+having
+        count(*) > 1;
+--null check
+select
+        *
+from
+        silver.crm_cust_info
+where
+        customer_id is null;
+--duplication issues(Identical rows  → Duplicate)
+select
+        customer_id         ,
+        customer_key        ,
+        create_date,
+        count(*)
+from
+        silver.crm_cust_info
+group by
+        customer_id ,
+        customer_key,
+        create_date
+having
+        count(*) > 1;
+--check for unwanted spaces for string columns
+--expectation: no result
+select
+        firstname
+from
+        silver.crm_cust_info
+where
+        firstname       != TRIM(firstname )
+OR      TRIM(firstname) = ''
+OR      firstname IS NULL;
+
+-- check the consistency of values in low cardinality columns
+-- expectation: standardization and consistency
+select distinct
+        marital_status
+from
+        silver.crm_cust_info;
+select distinct
+        gender
+from
+        silver.crm_cust_info;
+-- checking dirty dates
+SELECT DISTINCT
+        create_date
+FROM
+        silver.crm_cust_info
+ORDER BY
+        create_date;
+--checking column data type
+select
+        TABLE_SCHEMA,
+        TABLE_NAME  ,
+        column_name ,
+        data_type   ,
+        character_maximum_length
+from
+        information_schema.columns
+where
+        table_name  = 'crm_cust_info'
+and     column_name = 'cst_create_date';
+SELECT
+        create_date                         ,
+        LEN(create_date)        AS len_chars,
+        DATALENGTH(create_date) AS len_bytes
+FROM
+        silver.crm_cust_info
+where
+        DATALENGTH(create_date) > (LEN(create_date) * 2);
+SELECT
+        TRY_CONVERT(date, REPLACE( REPLACE( REPLACE( REPLACE(LTRIM(RTRIM(create_date)), CHAR(160), ''), -- non-breaking space
+        CHAR(13), ''),                                                                                      -- carriage return
+        CHAR(10), ''),                                                                                      -- line feed
+        CHAR(9), '')                                                                                        -- tab
+        ) AS clean_date
+FROM
+        silver.crm_cust_info;
+------------------------------------------------------------
+-- silver.crm_prd_info testing
+------------------------------------------------------------
+--check for duplication or versioning and null in bussiness key
+-- expectation : no duplication and no null values in PK
+SELECT
+        *
+FROM
+        silver.crm_prd_info;
+--versioning(Changed row over time → Version)
+select
+        product_key,
+        count(*) as duplicate_count
+from
+        silver.crm_prd_info
+group by
+        product_key
+having
+        count(*) > 1;
+WITH CTS AS
+     (
+             select
+                     *,
+                     row_number() over
+                             (
+                                     partition by
+                                             product_key
+                                     order by
+                                             product_start_dt
+                             )
+                     as version_ts
+             from
+                     silver.crm_prd_info)
+select
+        *
+from
+        CTS
+where
+        product_key = 'AC-HE-HL-U509';
+--null check
+select
+        product_id
+from
+        silver.crm_prd_info
+where
+        product_id is null;
+--duplication issues(Identical rows  → Duplicate)
+select
+        product_key ,
+        product_name  ,
+        product_cost,
+        product_line,
+        count(*) as duplicated_num
+from
+        silver.crm_prd_info
+group by
+        product_key ,
+        product_name  ,
+        product_cost,
+        product_line
+having
+        count(*) > 1;
+--check for unwanted spaces for string columns
+--expectation: no result
+select
+        product_name
+from
+        silver.crm_prd_info
+where
+        product_name      != TRIM(product_name)
+or      trim(product_name)=''
+or      product_name is null;
+-- check the consistency of values in low cardinality columns
+-- expectation: standardization and consistency
+select distinct
+        product_line
+from
+        silver.crm_prd_info;
+-- check for negative or  zero prices
+select
+        product_cost
+from
+        silver.crm_prd_info
+where
+        product_cost <= 0;
+--  check for invalid date orders
+select
+        *
+from
+        silver.crm_prd_info
+where
+        product_start_dt > product_end_dt;
+------------------------------------------------------------
+-- silver.crm_sales_details testing
+------------------------------------------------------------
+--CHECK DEDUP OR NULL IN BUSSINESS KEY
+select
+        order_number,
+        count(*) as duplicate_count
+from
+        silver.crm_sales_details
+group by
+        order_number
+having
+        count(*) > 1
+and     order_number IS NULL;
+select
+        *
+from
+        silver.crm_sales_details
+where
+        order_number IS NULL;
+--CHECK FOR UNWANTED SPACES
+select
+        product_key
+from
+        silver.crm_sales_details
+where
+        product_key      != TRIM(product_key)
+OR      TRIM(product_key)=''
+OR      product_key IS NULL;
+--CHECK FOR NEGATIVE VALUE
+SELECT
+        customer_id
+FROM
+        silver.crm_sales_details
+WHERE
+        customer_id <= 0
+OR      customer_id IS NULL;
+--CHECK FOR INVALID DATES
+SELECT
+        *
+FROM
+        silver.crm_sales_details
+WHERE
+        TRY_CONVERT(DATE,ship_date) < TRY_CONVERT(DATE,order_date
+OR      TRY_CONVERT(DATE,due_date)  < TRY_CONVERT(DATE,order_date)
+OR      TRY_CONVERT(DATE,ship_date) IS NULL
+OR      TRY_CONVERT(DATE,order_date) IS NULL
+OR      TRY_CONVERT(DATE,due_date) IS NULL;
+SELECT
+        *
+FROM
+        silver.crm_sales_details
+WHERE
+        TRY_CONVERT(DATE,due_date) < TRY_CONVERT(DATE,order_date)
+OR      TRY_CONVERT(DATE,due_date) < TRY_CONVERT(DATE,ship_date)
+OR      TRY_CONVERT(DATE,ship_date) IS NULL
+OR      TRY_CONVERT(DATE,due_date) IS NULL;
+--CKECK NEGATIVE OR UNRELIABLE PRICES
+SELECT
+        unit_price
+FROM
+        silver.crm_sales_details
+WHERE
+        unit_price <=0
+OR      unit_price IS NULL;
+SELECT
+        quantity
+FROM
+        silver.crm_sales_details
+WHERE
+        quantity <=0
+OR      quantity IS NULL;
+SELECT
+        total_sales
+FROM
+        silver.crm_sales_details
+WHERE
+        total_sales <= 0
+OR      total_sales IS NULL
+OR      total_sales <> (quantity * unit_price);
+------------------------------------------------------------
+-- silver.erp_cust_aZ12 testing
+------------------------------------------------------------
+--  check for null in business key
+select
+        *
+from
+        silver.erp_cust_aZ12
+where
+        customer_id is null;
+-- check for versioning in business key
+select
+        customer_id,
+        count(*) as version
+from
+        silver.erp_cust_aZ12
+group by
+        customer_id
+having
+        count(*) >1;
+-- checking for duplicate in business key
+with cts as
+     (
+             select
+                     *,
+                     row_number() over
+                             (
+                                     partition by
+                                             cid
+                                     order by
+                                             bdate
+                             )
+                     as rn
+             from
+                     silver.erp_cust_aZ12)
+select
+        *
+from
+        cts
+where
+        rn >1;
+select
+        customer_id  ,
+        birthdate,
+        gender  ,
+        count(*) as duplicate
+from
+        silver.erp_cust_aZ12
+group by
+        customer_id  ,
+        birthdate,
+        gender
+having
+        count(*) > 1;
+--check for unwanted spaces
+select
+        customer_id
+from
+        silver.erp_cust_aZ12
+where
+        customer_id <> TRIM(customer_id);
+-- check for boundaries in date
+select
+        *
+from
+        silver.erp_cust_aZ12
+where
+        try_convert(date,birthdate) >= GETDATE()
+OR      try_convert(date,birthdate) < try_convert(date,'19260101');
+-- checking for abnormal dates or hidden characters
+select
+        *
+from
+        silver.erp_cust_aZ12
+where
+        LEN(birthdate) > 10
+OR      LEN(birthdate) < 10
+select
+        *
+from
+        silver.erp_cust_aZ12
+where
+        try_convert(date,birthdate) <> REPLACE( REPLACE( REPLACE( REPLACE (try_convert(date,birthdate), CHAR(160),''), CHAR(9),''), CHAR(10),''), CHAR(13),'')
+-- checking for uniqueness in low cardinality column
+select distinct
+        gender
+from
+        silver.erp_cust_aZ12;
+select
+        *
+from
+        silver.erp_cust_aZ12
+where
+        TRIM(gender) = ''
+OR      gender IS NULL
+OR      gender = 'M';
+------------------------------------------------------------
+-- silver.erp_loc_a101 testing
+------------------------------------------------------------
+select
+        *
+from
+        silver.erp_loc_a101
+where
+        country IS NULL
+--inspecting duplicate and null in business key
+select
+        *
+from
+        silver.erp_loc_a101
+where
+        customer_id IS NULL;
+select
+        customer_id,
+        count(*) as duplicate
+from
+        silver.erp_loc_a101
+group by
+        customer_id
+having
+        count(*) >1;
+select
+        customer_id  ,
+        country,
+        count(*) as duplicate
+from
+        silver.erp_loc_a101
+group by
+        customer_id,
+        country
+having
+        count(*) >1;
+select
+        *
+from
+        silver.erp_loc_a101
+where
+        customer_id != TRIM(customer_id);
+-- checking low cardinality column
+select distinct
+        country
+from
+        silver.erp_loc_a101;
+------------------------------------------------------------
+-- silver.erp_px_cat_g1v2 testing
+------------------------------------------------------------
+--INSPECTING DUPLICATES OR NULL OR  UNANTED SPACES IN BUSINESS KEY
+SELECT
+        *
+FROM
+        silver.erp_px_cat_g1v2
+WHERE
+        product_id IS NULL;
+
+
+SELECT
+        product_id,
+        COUNT(*) AS DUPLICATE
+FROM
+        silver.erp_px_cat_g1v2
+GROUP BY
+        product_id
+HAVING
+        COUNT(*) >1;
+
+
+SELECT
+        product_id          ,
+        category         ,
+        subcategory      ,
+        maintenance ,
+        COUNT(*) AS DUPLICATE
+FROM
+        silver.erp_px_cat_g1v2
+GROUP BY
+        product_id          ,
+        category         ,
+        subcategory      ,
+        maintenance 
+HAVING
+        COUNT(*) > 1;
+
+SELECT
+        *
+FROM
+        silver.erp_px_cat_g1v2
+WHERE
+        maintenance != TRIM(maintenance);
