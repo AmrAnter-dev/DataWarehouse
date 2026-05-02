@@ -83,8 +83,8 @@ BEGIN
         TRUNCATE TABLE silver.crm_cust_info;
 
         insert into silver.crm_cust_info(
+        customer_number,
         customer_id,
-        customer_key,
         first_name,
         last_name,
         full_name,
@@ -199,9 +199,9 @@ BEGIN
         TRUNCATE TABLE silver.crm_prd_info;
 
         INSERT INTO silver.crm_prd_info(
-        product_id,
+        product_number,
         category_id,
-        product_key,
+        product_id,
         product_name,
         product_cost,
         product_line,
@@ -215,11 +215,11 @@ BEGIN
         dwh_hash_key)
         
         SELECT 
-    prd_id AS product_id,
+    prd_id ,
 
-    REPLACE(LEFT(prd_key,5),'-','_') AS category_id,
+    REPLACE(LEFT(prd_key,5),'-','_') ,
 
-    SUBSTRING(prd_key,7,LEN(prd_key)) AS product_key,
+    SUBSTRING(prd_key,7,LEN(prd_key)),
 
     TRIM(prd_nm) AS product_name,
 
@@ -292,7 +292,7 @@ SET @row_count = @@ROWCOUNT;
 
             INSERT INTO silver.crm_sales_details(
             order_number            ,
-            product_key              ,
+            product_id              ,
             customer_id                       ,
             order_date                  ,
             ship_date                        ,
@@ -312,48 +312,42 @@ SET @row_count = @@ROWCOUNT;
             
             
             select
-            TRIM(sls_ord_num) AS order_number,
-            TRIM(sls_prd_key) AS product_key,
+            TRIM(sls_ord_num),
+            TRIM(sls_prd_key) ,
             sls_cust_id AS customer_id,
             -- ORDER DATE CLEANING
-            CASE
-                WHEN TRY_CONVERT(date,sls_order_dt) IS NULL
-                  OR sls_order_dt = '0'
-                  OR TRY_CONVERT(date,sls_order_dt) > TRY_CONVERT(date,sls_ship_dt)
-                  OR TRY_CONVERT(date,sls_order_dt) > TRY_CONVERT(date,sls_due_dt)
+                    CASE
+                        WHEN TRY_CONVERT(date,sls_order_dt) IS NULL
+                          OR sls_order_dt = '0'
+                          OR LEN(sls_order_dt) < 8
+                          OR TRY_CONVERT(date,sls_order_dt) > TRY_CONVERT(date,sls_ship_dt)
+      
 
-                THEN TRY_CONVERT(date,sls_ship_dt)
+                        THEN TRY_CONVERT(date,sls_ship_dt)
 
-                ELSE TRY_CONVERT(date,sls_order_dt)
-            END AS order_date,
-            -- SHIP DATE CLEANING
-            CASE
-                WHEN TRY_CONVERT(date,sls_ship_dt) IS NULL THEN TRY_CONVERT(date,sls_order_dt)
-                WHEN TRY_CONVERT(date,sls_ship_dt) < TRY_CONVERT(date,sls_order_dt)
-                THEN TRY_CONVERT(date,sls_order_dt)
-                ELSE TRY_CONVERT(date,sls_ship_dt)
-                END AS ship_date,
-            -- DUE DATE CLEANING
-            CASE
-            WHEN TRY_CONVERT(date,sls_due_dt) <
-                 CASE
-                     WHEN TRY_CONVERT(date,sls_ship_dt) >
-                          TRY_CONVERT(date,sls_order_dt)
-                     THEN TRY_CONVERT(date,sls_ship_dt)
-                     ELSE TRY_CONVERT(date,sls_order_dt)
-                 END
+                        ELSE TRY_CONVERT(date,sls_order_dt)
+                    END AS sls_order_dt,
 
-            THEN
-                 CASE
-                     WHEN TRY_CONVERT(date,sls_ship_dt) >
-                          TRY_CONVERT(date,sls_order_dt)
-                     THEN TRY_CONVERT(date,sls_ship_dt)
-                     ELSE TRY_CONVERT(date,sls_order_dt)
-                 END
+                    -- SHIP DATE CLEANING
+                    CASE
+                        WHEN TRY_CONVERT(date,sls_ship_dt) IS NULL THEN TRY_CONVERT(date,sls_order_dt)
+  
+                        ELSE TRY_CONVERT(date,sls_ship_dt)
+                        END AS sls_ship_dt,
 
-            ELSE TRY_CONVERT(date,sls_due_dt)
+                    -- DUE DATE CLEANING
+                    CASE
+                    WHEN TRY_CONVERT(date,sls_due_dt) IS NULL 
+     
 
-            END AS due_date,
+                    THEN TRY_CONVERT(date,sls_ship_dt)
+     
+
+                    ELSE TRY_CONVERT(date,sls_due_dt)
+
+                    END AS sls_due_dt,
+
+
 
             -- SALES
                ROUND( 
@@ -595,10 +589,51 @@ SET @row_count = @@ROWCOUNT;
                     cleaned_customer_id = REPLACE(TRIM(cid),'-',''),
                     cleaned_country =
                         CASE
-                            WHEN UPPER(TRIM(cntry)) IN ('DE','GERMANY') THEN 'GERMANY'
-                            WHEN UPPER(TRIM(cntry)) IN ('USA','UNITED STATES','US') THEN 'USA'
-                            WHEN cntry IS NULL OR TRIM(cntry) = '' THEN 'N/A'
-                            ELSE UPPER(TRIM(cntry))
+                            WHEN replace(
+		                    replace(
+			                    replace(
+				                    replace(
+					                    upper(trim(cntry))
+					                    ,char(160),'')
+						                    ,char(13),'')
+							                    ,char(10),''),
+								                    char(9),'')  IN ('DE','GERMANY') THEN 'GERMANY'
+                            WHEN replace(
+		                    replace(
+			                    replace(
+				                    replace(
+					                    upper(trim(cntry))
+					                    ,char(160),'')
+						                    ,char(13),'')
+							                    ,char(10),''),
+								                    char(9),'')  IN ('USA','UNITED STATES','US') THEN 'USA'
+                           WHEN replace(
+		                            replace(
+			                            replace(
+				                            replace(
+					                            upper(trim(cntry))
+					                            ,char(160),'')
+						                            ,char(13),'')
+							                            ,char(10),''),
+								                            char(9),'')  IS NULL 
+                                                        OR replace(
+		                                                        replace(
+			                                                        replace(
+				                                                        replace(
+					                                                        upper(trim(cntry))
+					                                                        ,char(160),'')
+						                                                        ,char(13),'')
+							                                                        ,char(10),''),
+								                                                        char(9),'')  = '' THEN 'N/A'
+                             ELSE replace(
+		                                replace(
+			                                replace(
+				                                replace(
+					                                upper(trim(cntry))
+					                                ,char(160),'')
+						                                ,char(13),'')
+							                                ,char(10),''),
+								                                char(9),'') 
                         END
             ) c;
 
